@@ -13,58 +13,130 @@ firebase.initializeApp(config);
 var database = firebase.database();
 
 
+var p1Guess = null;
+var p2Guess = null;
+
+
 $('#submit-btn').on('click', function(event){ 
   event.preventDefault();
 
-  var userName = $('#user-name').val().trim();
+  var userName = $('#username-input').val().trim();
   console.log(userName);
 
 
   database.ref().push({
     player: userName,
+    wins: 0,
+    loses: 0
   })
 
-  $('#user-name').val('');
+  $('#username-input').val('');
 
 
 });
+
+
+
 
 
 database.ref().on('child_added', function(childSnapshot){ 
 
   var player = childSnapshot.val().player;
 
-  //if player 1 class = empty, then append palyer 1 and change class to full
+  //if player 1 is empty, load from firebase, else if player 1 is full, load player 2
   if ($('#player1').hasClass('empty')){
      
     $('#player1').removeClass('empty').addClass('full');
 
-    var $rock = $('<div>').addClass('guess').attr('id', 'p1-rock').text('Rock');
-    var $paper = $('<div>').addClass('guess').attr('id', 'p1-paper').text('Paper');
-    var $scissors = $('<div>').addClass('guess').attr('id', 'p1-scissors').text('Scissors');
+    var $rock = $('<div>').addClass('guess g1').attr('data-choice', 'rock').text('Rock');
+    var $paper = $('<div>').addClass('guess g1').attr('data-choice', 'paper').text('Paper');
+    var $scissors = $('<div>').addClass('guess g1').attr('data-choice', 'scissors').text('Scissors');
 
-    $('#player1').append(player, $rock, $paper, $scissors); 
+    $('#p1-username').text(player);
+    $('#player1').append($rock, $paper, $scissors); 
 
 
   } else if ($('#player2').hasClass('empty')){
 
     $('#player2').removeClass('empty').addClass('full');
 
-    var $rock = $('<div>').addClass('guess').attr('id', 'p2-rock').text('Rock');
-    var $paper = $('<div>').addClass('guess').attr('id', 'p2-paper').text('Paper');
-    var $scissors = $('<div>').addClass('guess').attr('id', 'p2-scissors').text('Scissors');
+    var $rock = $('<div>').addClass('guess g2').attr('data-choice', 'rock').text('Rock');
+    var $paper = $('<div>').addClass('guess g2').attr('data-choice', 'paper').text('Paper');
+    var $scissors = $('<div>').addClass('guess g2').attr('data-choice', 'scissors').text('Scissors');
 
-    $('#player2').append(player, $rock, $paper, $scissors); 
+    $('#p2-username').text(player);
+    $('#player2').append($rock, $paper, $scissors); 
+    $('#game-board').text("Player 1's Move!");
   }
 
-
-  
-  //else if same for player 2
 
 
 });
 
+//on click even for p1 and p2 guesses
+$(document).on("click",".guess", function() {
+  
+  if(!p1Guess && $(this).hasClass('g1')){
+    p1Guess = $(this).attr('data-choice');
+    console.log(p1Guess);
+    $('#game-board').text("Player 2's Move!");
+  } 
 
-//onclick send user name to firebase
-//initialize wins and loses 
-//create buttons for r p and s
+  if(p1Guess && !p2Guess && $(this).hasClass('g2')){
+    p2Guess = $(this).attr('data-choice');
+    console.log(p2Guess);
+  }
+
+  if(p1Guess && p2Guess){
+    compare();
+  }
+  
+
+  });
+
+function compare(){
+
+  /*
+  rock beats sci
+  sic beats paper
+  paper beats rock
+  */
+
+  //tie 
+  if(p1Guess === p2Guess){
+    $('#game-board').text("Bummer, a tie :( -- Player1, your turn");
+    p1Guess = null;
+    p2Guess = null;
+
+  }
+
+  //   win
+  else if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
+    $('#game-board').text("Player 1 wins! -- Player1, your turn");
+
+    p1Guess = null;
+    p2Guess = null;
+
+  }
+
+  else if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
+    $('#game-board').text("Player 2 wins! -- Player1, your turn");
+
+    p1Guess = null;
+    p2Guess = null;
+  }
+
+//   if p1 = rock ps= scissors or p1 paper and p2 is rock, or p1 = sci and ps = paper
+
+
+};
+
+
+// var postsRef = database.child.ref("player");
+// postsRef.limitToFirst(1).once("value", function(snapshot) {
+//     console.log(snapshot.key);
+// });
+
+//Firebase data doc:
+//https://firebase.google.com/docs/database/admin/retrieve-data
+

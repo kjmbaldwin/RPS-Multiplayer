@@ -1,3 +1,16 @@
 .margin-down{
 	margin-bottom: 10px;
 }
+
+.guess{
+	margin: 10px;
+	padding: 10px;
+	border: 1px solid #ddd;
+	text-align: center;
+	border-radius: 5px;
+}
+
+.guess:hover{
+	background-color: #57A2E8;
+	color: #fff;
+}
