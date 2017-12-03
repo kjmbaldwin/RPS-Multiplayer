@@ -110,17 +110,25 @@ function compare(){
 
   }
 
-  //   win
+  //player 1 win
   else if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
     $('#game-board').text("Player 1 wins! -- Player1, your turn");
+
+    //player 1 wins ++
+    //player 2 loses ++
 
     p1Guess = null;
     p2Guess = null;
 
   }
 
+  //player 2 win
   else if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
     $('#game-board').text("Player 2 wins! -- Player1, your turn");
+
+    //player 2 wins ++
+    //player 1 loses ++
+
 
     p1Guess = null;
     p2Guess = null;
