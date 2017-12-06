@@ -12,25 +12,58 @@ firebase.initializeApp(config);
 
 var database = firebase.database();
 
+var p1Guess = '';
+var p2Guess = '';
 
-var p1Guess = null;
-var p2Guess = null;
+var newPlayer = null;
+
+var player1 = null;
+var player2 = null;
+
+//watch the players section for changes
+database.ref('players/').on('value', function(snapshot){
+
+  var watchP1 = snapshot.child('p1').exists()
+  var watchP2 = snapshot.child('p2').exists()
+
+  //if a player1 exists
+  if(watchP1){
+    
+    //give var player1 a value
+    player1 = snapshot.val().p1;
+
+    //print name and stats
+    $('#p1-username').text(player1.player);
+    $('#p1-stats').text('Wins: ' + player1.wins + ' Loses: ' + player1.loses);
+  
+  // if player1 does not exist remove everything.
+  } else {
+
+    $('#p1-username').text('Waiting for Player 1');
+    $('#p1-stats').empty();
+
+  }
+
+  if(watchP2){
+    exist2 = true;
+    player2 = snapshot.val().p2;
+
+    //print name and stats
+    $('#p2-username').text(player2.player);
+    $('#p2-stats').text('Wins: ' + player2.wins + ' Loses: ' + player2.loses);
+  
+  } else {
+
+    $('#p2-username').text('Waiting for Player 2');
+    $('#p2-stats').empty();
+
+  }
+
+  if(watchP1 && watchP2){
+    console.log('Both players are ready');
+  }
 
 
-$('#submit-btn').on('click', function(event){ 
-  event.preventDefault();
-
-  var userName = $('#username-input').val().trim();
-  console.log(userName);
-
-
-  database.ref().push({
-    player: userName,
-    wins: 0,
-    loses: 0
-  })
-
-  $('#username-input').val('');
 
 
 });
@@ -39,6 +72,31 @@ $('#submit-btn').on('click', function(event){
 
 
 
+$('#submit-btn').on('click', function(event){ 
+  event.preventDefault();
+
+  //if var player1 doesn't have a value
+  if(!player1){
+
+    //write new player 1 and push to firebase
+    writePlayer();
+    database.ref().child('players/p1').set(newPlayer);
+  
+    //if the user closes the tab, remove player 1
+    database.ref().child('players/p1').onDisconnect().remove();
+
+  }  else if(!player2){
+    
+    writePlayer();
+    database.ref().child('players/p2').set(newPlayer);
+
+    database.ref().child('players/p2').onDisconnect().remove();
+  }
+
+  $('#username-input').val('');
+});
+
+/*
 database.ref().on('child_added', function(childSnapshot){ 
 
   var player = childSnapshot.val().player;
@@ -72,6 +130,7 @@ database.ref().on('child_added', function(childSnapshot){
 
 
 });
+*/
 
 //on click even for p1 and p2 guesses
 $(document).on("click",".guess", function() {
@@ -95,19 +154,11 @@ $(document).on("click",".guess", function() {
   });
 
 function compare(){
-
-  /*
-  rock beats sci
-  sic beats paper
-  paper beats rock
-  */
-
   //tie 
   if(p1Guess === p2Guess){
     $('#game-board').text("Bummer, a tie :( -- Player1, your turn");
     p1Guess = null;
     p2Guess = null;
-
   }
 
   //player 1 win
@@ -119,7 +170,6 @@ function compare(){
 
     p1Guess = null;
     p2Guess = null;
-
   }
 
   //player 2 win
@@ -129,14 +179,11 @@ function compare(){
     //player 2 wins ++
     //player 1 loses ++
 
-
     p1Guess = null;
     p2Guess = null;
   }
 
 //   if p1 = rock ps= scissors or p1 paper and p2 is rock, or p1 = sci and ps = paper
-
-
 };
 
 
@@ -147,4 +194,25 @@ function compare(){
 
 //Firebase data doc:
 //https://firebase.google.com/docs/database/admin/retrieve-data
+
+function writePlayer(){
+
+  newPlayer = {
+      player: $('#username-input').val().trim(),
+      wins: 0,
+      loses: 0,
+      guess: '',
+    }
+
+};
+
+function renderButtons(){
+
+  var $rock = $('<div>').addClass('guess g1').attr('data-choice', 'rock').text('Rock');
+  var $paper = $('<div>').addClass('guess g1').attr('data-choice', 'paper').text('Paper');
+  var $scissors = $('<div>').addClass('guess g1').attr('data-choice', 'scissors').text('Scissors');
+
+  $('#player1').append($rock, $paper, $scissors); 
+
+};
 
