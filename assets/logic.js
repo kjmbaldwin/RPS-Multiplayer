@@ -23,6 +23,12 @@ var player2 = null;
 var p1Guess;
 var p2Guess;
 
+//used to hold the current score
+var p1Win;
+var p1Loss;
+var p2Win;
+var p2Loss;
+
 
 
 //watch firebase for changes to main children
@@ -42,6 +48,10 @@ database.ref().on('value', function(snapshot){
     //print name and stats
     $('#p1-username').text(player1.player);
     $('#p1-stats').text('Wins: ' + player1.wins + ' Loses: ' + player1.loses);
+
+    //hold the current score locally
+    p1Win = snapshot.val().players.p1.wins;
+    p1Loss = snapshot.val().players.p1.loss;
   
   // if player1 does not exist remove everything.
   } else {
@@ -58,6 +68,9 @@ database.ref().on('value', function(snapshot){
     //print name and stats
     $('#p2-username').text(player2.player);
     $('#p2-stats').text('Wins: ' + player2.wins + ' Loses: ' + player2.loses);
+
+    p2Win = snapshot.val().players.p1.wins;
+    p2Loss = snapshot.val().players.p2.loss;
   
   } else {
 
@@ -75,6 +88,10 @@ database.ref().on('value', function(snapshot){
   if (!watchP1 || !watchP2){
     database.ref().child('turn').remove();
   } 
+
+
+  
+
 
 });
 
@@ -116,11 +133,14 @@ database.ref('turn').on('value', function(turn){
   //render buttons to the correct side of the game
   if(turn.val() === 1 ){
     renderButtons('#p1-buttons', 'p1');
+
   } 
 
   if(turn.val() === 2 ){
     renderButtons('#p2-buttons', 'p2');
   } 
+
+  
 
 });
 
@@ -142,6 +162,7 @@ $(document).on('click', '.p2', function(){
   var guess = $(this).attr('data-choice');
   database.ref().child('players/p2/guess').set(guess);
   database.ref().child('turn').set(1);
+  compare();
  
 });
 
@@ -149,71 +170,72 @@ $(document).on('click', '.p2', function(){
 //watch the guess values, if both are answered, compare them:
 database.ref('players/').on('value', function(snapshot){
 
-  if (snapshot.child('p1').exists()){
+  if (snapshot.child('p1/guess').exists()){
     p1Guess = snapshot.val().p1.guess;
+    console.log("p1Guess: " + p1Guess);
   }
 
-  if(snapshot.child('p2').exists()){
+  if(snapshot.child('p2/guess').exists()){
     p2Guess = snapshot.val().p2.guess;
+    console.log("p2Guess: " + p2Guess);
   }
 
-  if (p1Guess && p2Guess){
-    compare();
+  // if (p1Guess && p2Guess){
+  //   compare();
+  //   p1Guess = null;
+  //   p2Guess = null;
+    // console.log('after compare' + p1Guess);
     // database.ref().child('players/p1/guess').set('');
     // database.ref().child('players/p2/guess').set('');
-  }
+  // }
 
 });
 
   
 function compare(){
 
-  //pull current scores
-  var ref = database.ref('players');
-
-  ref.once('value').then(function(snapshot){
-    var p1Win = snapshot.val().p1.wins;
-    var p1Loss = snapshot.val().p1.loses;
-    var p2Win = snapshot.val().p2.wins;
-    var p2Loss = snapshot.val().p2.loses;
-
-    console.log('p1 win ' + p2Win);
-    console.log('p1 loss ' + p1Loss);
-    console.log('p2 win ' + p2Win);
-    console.log('p2 loss ' + p2Loss);
-
 
       //tie 
       if(p1Guess === p2Guess){
         $('#game-board').html('<h2>Bummer, a tie :(</h2>');
-      
+      } 
+
       //player 1 win
-      } else if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
+      if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
           
-          $('#game-board').html("<h2>Player 1 wins!</h2>");
+        $('#game-board').html("<h2>Player 1 wins!</h2>");
 
-          //player 1 wins ++
-          p1Win++;
-          database.ref().child('players/p1/wins').set(p1Win);
-          //player 2 loses ++
-          p2Loss++;
-          database.ref().child('players/p1/wins').set(p2Loss);
+        //player 1 wins ++
+        // p1Win = p1Win + 1;
+        // console.log("after compare p1 win:" + p1Win);
+        // database.ref().child('players/p1/wins').set(p1Win);
+        // database.ref().child('players/p1/guess').remove();
+        
+        //player 2 loses ++
+        // p2Loss = p2Loss + 1;
+        // console.log("after compare p2 loss:" + p2Loss);
+        // database.ref().child('players/p1/wins').set(p2Loss);
+        // database.ref().child('players/p2/guess').remove();
 
-        //player 2 win
-        } else if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
-            $('#game-board').text("Player 2 wins! -- Player1, your turn");
+        } 
 
-            //player 2 wins ++
-            p2Win++;
-            database.ref().child('players/p1/wins').set(p2Win);
-            //player 1 loses ++
-            p1Loss++;
-            database.ref().child('players/p1/wins').set(p1Loss);
+        // //player 2 win
+        if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
+            $('#game-board').html("<h2>Player 2 wins!</h2>");
+
+        //     //player 2 wins ++
+        //     p2Win = p2Win + 1;
+        //     database.ref().child('players/p1/wins').set(p2Win);
+        //     //player 1 loses ++
+        //     p1Loss = p1Loss + 1;
+        //     database.ref().child('players/p1/wins').set(p1Loss);
           }
+
 
 //   if p1 = rock ps= scissors or p1 paper and p2 is rock, or p1 = sci and ps = paper
 
-  });
+  // 
+
 };
 
 
@@ -223,7 +245,7 @@ function writePlayer(){
       player: $('#username-input').val().trim(),
       wins: 0,
       loses: 0,
-      guess: '',
+      
     }
 
   // database.ref().child('turn').set(1);
@@ -243,3 +265,36 @@ function renderButtons(location, player){
   
 };
 
+function grabScore(){
+  var ref = database.ref('players/');
+
+  ref.once('value').then(function(snapshot){
+    p1Win = snapshot.val().p1.wins;
+    p1Loss = snapshot.val().p1.loses;
+    p2Win = snapshot.val().p2.wins;
+    p2Loss = snapshot.val().p2.loses;
+
+    console.log('inside function p1 win ' + p1Win);
+    console.log('inside function p1 loss ' + p1Loss);
+    console.log('inside function p2 win ' + p2Win);
+    console.log('inside function p2 loss ' + p2Loss);
+
+    compare();
+
+    });
+
+  console.log('before parse p1 win ' + p1Win);
+  console.log('before parse p1 loss ' + p1Loss);
+  console.log('before parse p2 win ' + p2Win);
+  console.log('before parse p2 loss ' + p2Loss);
+
+  p1Win = parseInt(p1Win);
+  p1Loss = parseInt(p1Loss);
+  p2Win = parseInt(p2Win);
+  p2Loss = parseInt(p2Loss);
+
+  console.log('after parse p1 win ' + p1Win);
+  console.log('after parse p1 loss ' + p1Loss);
+  console.log('after parse p2 win ' + p2Win);
+  console.log('after parse p2 loss ' + p2Loss);
+};
