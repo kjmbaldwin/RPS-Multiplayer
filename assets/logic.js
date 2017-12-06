@@ -59,12 +59,34 @@ database.ref('players/').on('value', function(snapshot){
 
   }
 
+  //if we have a player 1 and player 2, set turns to 1 in firebase
   if(watchP1 && watchP2){
-    console.log('Both players are ready');
+    database.ref().child('turn').set(1);
   }
 
+  //if we lose player 1 or 2, remove turns
+  if (!watchP1 || !watchP2){
+    database.ref().child('turn').remove();
+  } 
 
+});
 
+//watch who's turn it is
+database.ref('turn/').on('value', function(turn){ 
+
+  if(turn.val() === 1){
+    renderButtons('#p1-buttons');
+    
+  } else{
+    $('#p1-buttons').empty();
+  }
+
+  if(turn.val() === 2){
+    renderButtons('#p2-buttons');
+
+  } else{
+    $('#p2-buttons').empty();
+  }
 
 });
 
@@ -82,8 +104,9 @@ $('#submit-btn').on('click', function(event){
     writePlayer();
     database.ref().child('players/p1').set(newPlayer);
   
-    //if the user closes the tab, remove player 1
+    //if the user closes the tab, remove player 1 and turns
     database.ref().child('players/p1').onDisconnect().remove();
+
 
   }  else if(!player2){
     
@@ -91,6 +114,7 @@ $('#submit-btn').on('click', function(event){
     database.ref().child('players/p2').set(newPlayer);
 
     database.ref().child('players/p2').onDisconnect().remove();
+
   }
 
   $('#username-input').val('');
@@ -206,13 +230,15 @@ function writePlayer(){
 
 };
 
-function renderButtons(){
+function renderButtons(location){
 
-  var $rock = $('<div>').addClass('guess g1').attr('data-choice', 'rock').text('Rock');
-  var $paper = $('<div>').addClass('guess g1').attr('data-choice', 'paper').text('Paper');
-  var $scissors = $('<div>').addClass('guess g1').attr('data-choice', 'scissors').text('Scissors');
+  var $text = $('<div>').addClass('text-center').text('It\'s Your Turn!');
+  var $rock = $('<div>').addClass('guess').attr('data-choice', 'rock').text('Rock');
+  var $paper = $('<div>').addClass('guess').attr('data-choice', 'paper').text('Paper');
+  var $scissors = $('<div>').addClass('guess').attr('data-choice', 'scissors').text('Scissors');
 
-  $('#player1').append($rock, $paper, $scissors); 
+  $(location).append($text, $rock, $paper, $scissors);
 
+  
 };
 
