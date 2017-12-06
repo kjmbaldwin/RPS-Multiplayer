@@ -159,52 +159,63 @@ database.ref('players/').on('value', function(snapshot){
 
   if (p1Guess && p2Guess){
     compare();
+    // database.ref().child('players/p1/guess').set('');
+    // database.ref().child('players/p2/guess').set('');
   }
 
 });
 
   
 function compare(){
-  //tie 
-  if(p1Guess === p2Guess){
-    $('#game-board').text("Bummer, a tie :( -- Player1, your turn");
-    p1Guess = null;
-    p2Guess = null;
-  }
 
-  //player 1 win
-  else if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
-    $('#game-board').text("Player 1 wins! -- Player1, your turn");
+  //pull current scores
+  var ref = database.ref('players');
 
-    //player 1 wins ++
-    //player 2 loses ++
+  ref.once('value').then(function(snapshot){
+    var p1Win = snapshot.val().p1.wins;
+    var p1Loss = snapshot.val().p1.loses;
+    var p2Win = snapshot.val().p2.wins;
+    var p2Loss = snapshot.val().p2.loses;
 
-    p1Guess = null;
-    p2Guess = null;
-  }
+    console.log('p1 win ' + p2Win);
+    console.log('p1 loss ' + p1Loss);
+    console.log('p2 win ' + p2Win);
+    console.log('p2 loss ' + p2Loss);
 
-  //player 2 win
-  else if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
-    $('#game-board').text("Player 2 wins! -- Player1, your turn");
 
-    //player 2 wins ++
-    //player 1 loses ++
+      //tie 
+      if(p1Guess === p2Guess){
+        $('#game-board').html('<h2>Bummer, a tie :(</h2>');
+      
+      //player 1 win
+      } else if ( (p1Guess === "rock" && p2Guess === "scissors") || (p1Guess === "paper" && p2Guess === "rock") || (p1Guess === "scissors" && p2Guess === "paper")){
+          
+          $('#game-board').html("<h2>Player 1 wins!</h2>");
 
-    p1Guess = null;
-    p2Guess = null;
-  }
+          //player 1 wins ++
+          p1Win++;
+          database.ref().child('players/p1/wins').set(p1Win);
+          //player 2 loses ++
+          p2Loss++;
+          database.ref().child('players/p1/wins').set(p2Loss);
+
+        //player 2 win
+        } else if ((p2Guess === "rock" && p1Guess === "scissors") || (p2Guess === "paper" && p1Guess === "rock") || (p2Guess === "scissors" && p1Guess === "paper") ){
+            $('#game-board').text("Player 2 wins! -- Player1, your turn");
+
+            //player 2 wins ++
+            p2Win++;
+            database.ref().child('players/p1/wins').set(p2Win);
+            //player 1 loses ++
+            p1Loss++;
+            database.ref().child('players/p1/wins').set(p1Loss);
+          }
 
 //   if p1 = rock ps= scissors or p1 paper and p2 is rock, or p1 = sci and ps = paper
+
+  });
 };
 
-
-// var postsRef = database.child.ref("player");
-// postsRef.limitToFirst(1).once("value", function(snapshot) {
-//     console.log(snapshot.key);
-// });
-
-//Firebase data doc:
-//https://firebase.google.com/docs/database/admin/retrieve-data
 
 function writePlayer(){
 
