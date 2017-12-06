@@ -12,25 +12,32 @@ firebase.initializeApp(config);
 
 var database = firebase.database();
 
-var p1Guess = '';
-var p2Guess = '';
-
+//object to write the player to firebase
 var newPlayer = null;
 
+//to track players locally
 var player1 = null;
 var player2 = null;
 
-//watch the players section for changes
-database.ref('players/').on('value', function(snapshot){
+//holds guess values to compare
+var p1Guess;
+var p2Guess;
 
-  var watchP1 = snapshot.child('p1').exists()
-  var watchP2 = snapshot.child('p2').exists()
+
+
+//watch firebase for changes to main children
+database.ref().on('value', function(snapshot){
+
+  //see if these children exist after data chagnes
+  var watchP1 = snapshot.child('players/p1').exists()
+  var watchP2 = snapshot.child('players/p2').exists()
+  var watchTurn = snapshot.child('turn').exists()
 
   //if a player1 exists
   if(watchP1){
     
     //give var player1 a value
-    player1 = snapshot.val().p1;
+    player1 = snapshot.val().players.p1;
 
     //print name and stats
     $('#p1-username').text(player1.player);
@@ -46,7 +53,7 @@ database.ref('players/').on('value', function(snapshot){
 
   if(watchP2){
     exist2 = true;
-    player2 = snapshot.val().p2;
+    player2 = snapshot.val().players.p2;
 
     //print name and stats
     $('#p2-username').text(player2.player);
@@ -59,8 +66,8 @@ database.ref('players/').on('value', function(snapshot){
 
   }
 
-  //if we have a player 1 and player 2, set turns to 1 in firebase
-  if(watchP1 && watchP2){
+  //if we have a player 1 & 2, and the turns count does not exist, create it.
+  if(watchP1 && watchP2 && !watchTurn){
     database.ref().child('turn').set(1);
   }
 
@@ -71,29 +78,7 @@ database.ref('players/').on('value', function(snapshot){
 
 });
 
-//watch who's turn it is
-database.ref('turn/').on('value', function(turn){ 
-
-  if(turn.val() === 1){
-    renderButtons('#p1-buttons');
-    
-  } else{
-    $('#p1-buttons').empty();
-  }
-
-  if(turn.val() === 2){
-    renderButtons('#p2-buttons');
-
-  } else{
-    $('#p2-buttons').empty();
-  }
-
-});
-
-
-
-
-
+//add players to firebase via button
 $('#submit-btn').on('click', function(event){ 
   event.preventDefault();
 
@@ -104,10 +89,10 @@ $('#submit-btn').on('click', function(event){
     writePlayer();
     database.ref().child('players/p1').set(newPlayer);
   
-    //if the user closes the tab, remove player 1 and turns
+    //if the user closes the tab, remove player 1
     database.ref().child('players/p1').onDisconnect().remove();
 
-
+    //if playter 1 has a value, write player 2
   }  else if(!player2){
     
     writePlayer();
@@ -120,63 +105,65 @@ $('#submit-btn').on('click', function(event){
   $('#username-input').val('');
 });
 
-/*
-database.ref().on('child_added', function(childSnapshot){ 
 
-  var player = childSnapshot.val().player;
+//watch who's turn it is
+database.ref('turn').on('value', function(turn){ 
 
-  //if player 1 is empty, load from firebase, else if player 1 is full, load player 2
-  if ($('#player1').hasClass('empty')){
-     
-    $('#player1').removeClass('empty').addClass('full');
+  //clear any buttons that were rendered
+  $('#p1-buttons').empty();
+  $('#p2-buttons').empty();
 
-    var $rock = $('<div>').addClass('guess g1').attr('data-choice', 'rock').text('Rock');
-    var $paper = $('<div>').addClass('guess g1').attr('data-choice', 'paper').text('Paper');
-    var $scissors = $('<div>').addClass('guess g1').attr('data-choice', 'scissors').text('Scissors');
-
-    $('#p1-username').text(player);
-    $('#player1').append($rock, $paper, $scissors); 
-
-
-  } else if ($('#player2').hasClass('empty')){
-
-    $('#player2').removeClass('empty').addClass('full');
-
-    var $rock = $('<div>').addClass('guess g2').attr('data-choice', 'rock').text('Rock');
-    var $paper = $('<div>').addClass('guess g2').attr('data-choice', 'paper').text('Paper');
-    var $scissors = $('<div>').addClass('guess g2').attr('data-choice', 'scissors').text('Scissors');
-
-    $('#p2-username').text(player);
-    $('#player2').append($rock, $paper, $scissors); 
-    $('#game-board').text("Player 1's Move!");
-  }
-
-
-
-});
-*/
-
-//on click even for p1 and p2 guesses
-$(document).on("click",".guess", function() {
-  
-  if(!p1Guess && $(this).hasClass('g1')){
-    p1Guess = $(this).attr('data-choice');
-    console.log(p1Guess);
-    $('#game-board').text("Player 2's Move!");
+  //render buttons to the correct side of the game
+  if(turn.val() === 1 ){
+    renderButtons('#p1-buttons', 'p1');
   } 
 
-  if(p1Guess && !p2Guess && $(this).hasClass('g2')){
-    p2Guess = $(this).attr('data-choice');
-    console.log(p2Guess);
+  if(turn.val() === 2 ){
+    renderButtons('#p2-buttons', 'p2');
+  } 
+
+});
+
+
+//on click events for player1 guesses:
+$(document).on('click', '.p1', function(){ 
+
+  //pulls the data from the button
+  var guess = $(this).attr('data-choice');
+
+  //sends the data to firebase and sets the turn to 2
+  database.ref().child('players/p1/guess').set(guess);
+  database.ref().child('turn').set(2);
+
+});
+
+$(document).on('click', '.p2', function(){ 
+
+  var guess = $(this).attr('data-choice');
+  database.ref().child('players/p2/guess').set(guess);
+  database.ref().child('turn').set(1);
+ 
+});
+
+
+//watch the guess values, if both are answered, compare them:
+database.ref('players/').on('value', function(snapshot){
+
+  if (snapshot.child('p1').exists()){
+    p1Guess = snapshot.val().p1.guess;
   }
 
-  if(p1Guess && p2Guess){
+  if(snapshot.child('p2').exists()){
+    p2Guess = snapshot.val().p2.guess;
+  }
+
+  if (p1Guess && p2Guess){
     compare();
   }
+
+});
+
   
-
-  });
-
 function compare(){
   //tie 
   if(p1Guess === p2Guess){
@@ -228,14 +215,17 @@ function writePlayer(){
       guess: '',
     }
 
+  // database.ref().child('turn').set(1);
+
+
 };
 
-function renderButtons(location){
+function renderButtons(location, player){
 
   var $text = $('<div>').addClass('text-center').text('It\'s Your Turn!');
-  var $rock = $('<div>').addClass('guess').attr('data-choice', 'rock').text('Rock');
-  var $paper = $('<div>').addClass('guess').attr('data-choice', 'paper').text('Paper');
-  var $scissors = $('<div>').addClass('guess').attr('data-choice', 'scissors').text('Scissors');
+  var $rock = $('<div>').addClass('guess').addClass(player).attr('data-choice', 'rock').text('Rock');
+  var $paper = $('<div>').addClass('guess').addClass(player).attr('data-choice', 'paper').text('Paper');
+  var $scissors = $('<div>').addClass('guess').addClass(player).attr('data-choice', 'scissors').text('Scissors');
 
   $(location).append($text, $rock, $paper, $scissors);
 
